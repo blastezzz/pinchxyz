@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>pin.ch — The last one left in the trenches</title>
   <meta name="description" content="pin.ch — The last one left in the trenches.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237e4517'/%3E%3Cstop offset='1' stop-color='%23d68a27'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='27' r='10' fill='%23161616'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -46,11 +47,6 @@
         <div class="hero-image-wrap">
           <img src="assets/moon_lounge.png" alt="pin.ch bird mascot">
         </div>
-        <div class="contract-center">
-          <span>CA:</span>
-          <code id="ca">soon...</code>
-          <button onclick="copyCA()" aria-label="Copy contract">⧉</button>
-        </div>
       </div>
 
       <aside class="token-card">
@@ -58,16 +54,21 @@
         <div class="token-row"><span>Ticker</span><strong>$pin.ch</strong></div>
         <div class="token-row"><span>Network</span><strong>Solana</strong></div>
         <div class="token-row"><span>Supply</span><strong>1,000,000,000</strong></div>
-        <div class="token-row"><span>Tax</span><strong>0%</strong></div>
-        <div class="token-row"><span>LP Burned</span><strong>Yes</strong></div>
-        <div class="token-row contract-card-row">
-          <span>Contract</span>
-          <button onclick="copyCA()"><code>soon...</code><b>⧉</b></button>
+        <div class="token-row"><span>Tax</span><strong class="trust">0%</strong></div>
+        <div class="token-row"><span>LP Burned</span><strong class="trust">Yes</strong></div>
+
+        <div class="contract-block">
+          <span class="contract-label">Contract address</span>
+          <div class="contract-pill">
+            <span class="pending-dot" id="pendingDot"></span>
+            <code id="ca">soon...</code>
+            <button onclick="copyCA()" id="copyBtn" aria-label="Copy contract address">⧉</button>
+          </div>
         </div>
       </aside>
     </section>
 
-    <section class="lore-section" id="lore">
+    <section class="lore-section reveal" id="lore">
       <div class="section-label">THE LORE</div>
       <h2>Almost <span>ready.</span></h2>
       <p>pin.ch doesn't sleep. Ever. While the rest of the world is deep in dreams, he's out there under the moon &mdash; on a rooftop, in a chair, in the middle of nowhere &mdash; holding a hat in his paw.</p>
@@ -77,32 +78,32 @@
     </section>
 
     <section class="memes-section" id="memes">
-      <div class="section-label">THE MEMES</div>
-      <h2>Straight from <span>the trenches.</span></h2>
+      <div class="section-label reveal">THE MEMES</div>
+      <h2 class="reveal">Straight from <span>the trenches.</span></h2>
       <div class="meme-grid">
-        <a class="meme-item" href="assets/memes/meme-1.png" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:0" href="assets/memes/meme-1.png" target="_blank" rel="noopener">
           <img src="assets/memes/meme-1.png" alt="pin.ch lounging on a rooftop deck chair under the moon" loading="lazy">
         </a>
-        <a class="meme-item" href="assets/memes/meme-2.jpg" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:1" href="assets/memes/meme-2.jpg" target="_blank" rel="noopener">
           <img src="assets/memes/meme-2.jpg" alt="pin.ch checking tren.ch referral stats at his desk" loading="lazy">
         </a>
-        <a class="meme-item" href="assets/memes/meme-3.jpg" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:2" href="assets/memes/meme-3.jpg" target="_blank" rel="noopener">
           <img src="assets/memes/meme-3.jpg" alt="pin.ch holding out his hat under the moon" loading="lazy">
         </a>
-        <a class="meme-item" href="assets/memes/meme-4.jpg" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:3" href="assets/memes/meme-4.jpg" target="_blank" rel="noopener">
           <img src="assets/memes/meme-4.jpg" alt="pin.ch having a picnic by the lake at sunset" loading="lazy">
         </a>
-        <a class="meme-item" href="assets/memes/meme-5.png" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:4" href="assets/memes/meme-5.png" target="_blank" rel="noopener">
           <img src="assets/memes/meme-5.png" alt="pin.ch DJing for a crowd" loading="lazy">
         </a>
-        <a class="meme-item" href="assets/memes/meme-6.png" target="_blank" rel="noopener">
+        <a class="meme-item reveal" style="--i:5" href="assets/memes/meme-6.png" target="_blank" rel="noopener">
           <img src="assets/memes/meme-6.png" alt="pin.ch planting the pin.ch flag on a hilltop by a castle" loading="lazy">
         </a>
       </div>
     </section>
 
     <section class="launch-section" id="chart">
-      <div class="launch-inner">
+      <div class="launch-inner reveal">
         <h2>Officially launched<br>on <span>tren.ch</span></h2>
         <a class="launch-btn" href="https://tren.ch/">Visit tren.ch <span>↗</span></a>
       </div>
@@ -123,6 +124,22 @@
       const toast = document.getElementById('toast');
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1400);
+
+      const btn = document.getElementById('copyBtn');
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1200);
+      }
+    }
+
+    const pendingDot = document.getElementById('pendingDot');
+    if (pendingDot && document.getElementById('ca').textContent.trim().toLowerCase() !== 'soon...') {
+      pendingDot.remove();
     }
 
     if (window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
@@ -157,6 +174,39 @@
         dot.style.opacity = 1;
         ring.style.opacity = 1;
       });
+    }
+
+    const revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const revealIO = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            revealIO.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+      revealEls.forEach(el => revealIO.observe(el));
+    } else {
+      revealEls.forEach(el => el.classList.add('in-view'));
+    }
+
+    const navSections = [
+      { link: document.querySelector('.nav nav a[href="#top"]'), el: document.querySelector('.hero') },
+      { link: document.querySelector('.nav nav a[href="#lore"]'), el: document.getElementById('lore') },
+      { link: document.querySelector('.nav nav a[href="#memes"]'), el: document.getElementById('memes') }
+    ];
+    if ('IntersectionObserver' in window) {
+      const spyIO = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const match = navSections.find(s => s.el === entry.target);
+          if (!match) return;
+          navSections.forEach(s => s.link && s.link.classList.remove('active'));
+          match.link && match.link.classList.add('active');
+        });
+      }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+      navSections.forEach(s => s.el && spyIO.observe(s.el));
     }
   </script>
 </body>
