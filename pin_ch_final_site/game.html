@@ -38,11 +38,13 @@
     .sound-toggle .mute-x{display:none}
     .sound-toggle.muted .wave{display:none}
     .sound-toggle.muted .mute-x{display:block}
-    .submit-row{display:flex;gap:8px;margin-top:2px}
-    .submit-row input{width:130px;background:#11151a;border:1px solid #282e36;border-radius:9px;padding:11px 12px;color:#f4f4f1;font:600 13px "Space Grotesk";text-align:center;outline:none;transition:.2s}
+    .submit-row{display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px;margin-top:2px}
+    .submit-row input{width:100%;background:#11151a;border:1px solid #282e36;border-radius:9px;padding:11px 12px;color:#f4f4f1;font:600 12px "Space Grotesk";text-align:center;outline:none;transition:.2s;box-sizing:border-box}
     .submit-row input:focus{border-color:var(--gold)}
-    .submit-row .game-btn{padding:11px 20px}
+    .submit-row input[readonly]{color:var(--gold);border-color:#3a2f18;background:#151109}
+    .submit-row .game-btn{padding:11px 20px;width:100%}
     .submit-row .game-btn:disabled{opacity:.5;cursor:default;transform:none}
+    .wallet-hint{font-size:11px;color:var(--muted);margin:0;max-width:280px}
     .submit-msg{font-size:12px;color:var(--muted);min-height:16px;margin:0}
     .submit-msg.err{color:#e0715a}
     .submit-msg.ok{color:var(--gold)}
@@ -106,9 +108,10 @@
         <h2>Not <span>ready</span> yet.</h2>
         <p class="score-line">Score: <b id="finalScore">0</b> &nbsp;·&nbsp; Best: <b id="bestScore">0</b></p>
         <div class="submit-row" id="submitRow">
-          <input type="text" id="usernameInput" maxlength="8" placeholder="Name (3-8)" autocomplete="off">
+          <input type="text" id="walletInput" maxlength="44" placeholder="Solana wallet address" autocomplete="off" spellcheck="false">
           <button class="game-btn" id="submitScoreBtn">Submit</button>
         </div>
+        <p class="wallet-hint" id="walletHint">Locked once submitted — paste carefully, this can’t be changed later.</p>
         <p class="submit-msg" id="submitMsg"></p>
         <button class="game-btn" id="againBtn">Play again</button>
       </div>
@@ -245,24 +248,48 @@
       const finalScoreEl = document.getElementById('finalScore');
       const bestScoreEl = document.getElementById('bestScore');
       const submitRow = document.getElementById('submitRow');
-      const usernameInput = document.getElementById('usernameInput');
+      const walletInput = document.getElementById('walletInput');
+      const walletHint = document.getElementById('walletHint');
       const submitScoreBtn = document.getElementById('submitScoreBtn');
       const submitMsg = document.getElementById('submitMsg');
       const lbList = document.getElementById('lbList');
       const soundToggle = document.getElementById('soundToggle');
       const BEST_KEY = 'pinch_hat_best';
-      const NAME_KEY = 'pinch_hat_username';
-      const CLIENT_KEY = 'pinch_hat_client_id';
-      const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
+      const WALLET_KEY = 'pinch_hat_wallet';
       let sessionId = null;
 
-      let clientId = localStorage.getItem(CLIENT_KEY);
-      if (!clientId) {
-        clientId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-        localStorage.setItem(CLIENT_KEY, clientId);
+      const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+      function base58Decode(str){
+        const bytes = [0];
+        for (let i = 0; i < str.length; i++) {
+          const value = BASE58_ALPHABET.indexOf(str[i]);
+          if (value === -1) return null;
+          let carry = value;
+          for (let j = 0; j < bytes.length; j++) {
+            carry += bytes[j] * 58;
+            bytes[j] = carry & 0xff;
+            carry >>= 8;
+          }
+          while (carry > 0) {
+            bytes.push(carry & 0xff);
+            carry >>= 8;
+          }
+        }
+        for (let i = 0; i < str.length - 1 && str[i] === '1'; i++) bytes.push(0);
+        return bytes.reverse();
+      }
+      function isValidSolanaAddress(addr){
+        if (typeof addr !== 'string' || addr.length < 32 || addr.length > 44) return false;
+        const decoded = base58Decode(addr);
+        return !!decoded && decoded.length === 32;
       }
 
-      usernameInput.value = localStorage.getItem(NAME_KEY) || '';
+      const lockedWallet = localStorage.getItem(WALLET_KEY);
+      if (lockedWallet) {
+        walletInput.value = lockedWallet;
+        walletInput.readOnly = true;
+        walletHint.textContent = 'This wallet is locked to your leaderboard entry.';
+      }
 
       function syncSoundToggle(){
         const muted = PinchSound.isMuted();
@@ -275,6 +302,11 @@
         syncSoundToggle();
       });
       syncSoundToggle();
+
+      function truncateWallet(addr){
+        if (addr.length <= 12) return addr;
+        return addr.slice(0, 4) + '…' + addr.slice(-4);
+      }
 
       function renderLeaderboard(entries){
         lbList.innerHTML = '';
@@ -290,7 +322,8 @@
           rank.textContent = '#' + (i + 1);
           const name = document.createElement('span');
           name.className = 'lb-name';
-          name.textContent = e.username;
+          name.textContent = truncateWallet(e.wallet);
+          name.title = e.wallet;
           const sc = document.createElement('span');
           sc.className = 'lb-score';
           sc.textContent = e.score;
@@ -310,9 +343,9 @@
       }
 
       async function submitScore(){
-        const username = usernameInput.value.trim();
-        if (!USERNAME_RE.test(username)) {
-          submitMsg.textContent = 'Name must be 3-8 letters, numbers or underscore.';
+        const wallet = walletInput.value.trim();
+        if (!isValidSolanaAddress(wallet)) {
+          submitMsg.textContent = 'That doesn’t look like a valid Solana address.';
           submitMsg.className = 'submit-msg err';
           return;
         }
@@ -328,13 +361,16 @@
           const r = await fetch('/api/leaderboard', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, clientId, username, score })
+            body: JSON.stringify({ sessionId, wallet, score })
           });
           let data;
           try { data = await r.json(); } catch { data = null; }
           if (!r.ok || !data) throw new Error((data && data.error) || 'Couldn’t submit right now.');
           sessionId = null;
-          localStorage.setItem(NAME_KEY, username);
+          if (!localStorage.getItem(WALLET_KEY)) {
+            localStorage.setItem(WALLET_KEY, wallet);
+            walletInput.readOnly = true;
+          }
           renderLeaderboard(data.entries);
           submitMsg.textContent = 'Submitted!';
           submitMsg.className = 'submit-msg ok';

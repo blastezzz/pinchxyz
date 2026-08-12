@@ -57,4 +57,35 @@ function scoreCeiling(elapsedSeconds) {
   return maxPossibleScore(elapsedSeconds) * 1.15 + 5;
 }
 
-module.exports = { redisCommand, isConfigured, getIp, checkRateLimit, scoreCeiling };
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+function base58Decode(str) {
+  const bytes = [0];
+  for (let i = 0; i < str.length; i++) {
+    const value = BASE58_ALPHABET.indexOf(str[i]);
+    if (value === -1) return null;
+    let carry = value;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  for (let i = 0; i < str.length - 1 && str[i] === '1'; i++) {
+    bytes.push(0);
+  }
+  return bytes.reverse();
+}
+
+// A Solana address is a base58-encoded ed25519 public key: always 32 raw bytes.
+function isValidSolanaAddress(addr) {
+  if (typeof addr !== 'string' || addr.length < 32 || addr.length > 44) return false;
+  const decoded = base58Decode(addr);
+  return !!decoded && decoded.length === 32;
+}
+
+module.exports = { redisCommand, isConfigured, getIp, checkRateLimit, scoreCeiling, isValidSolanaAddress };

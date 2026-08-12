@@ -1,30 +1,23 @@
-const { redisCommand, isConfigured, getIp, checkRateLimit, scoreCeiling } = require('./_shared');
+const { redisCommand, isConfigured, getIp, checkRateLimit, scoreCeiling, isValidSolanaAddress } = require('./_shared');
 
 const KEY = 'pinch:leaderboard';
-const NAMES_KEY = 'pinch:names';
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
-const CLIENT_ID_RE = /^[a-zA-Z0-9-]{8,64}$/;
 const MAX_SCORE = 5000;
 const TOP_N = 10;
 const SUBMIT_RATE_WINDOW = 60;
 const SUBMIT_RATE_MAX = 8;
 
+function parseEntries(raw) {
+  const entries = [];
+  if (!Array.isArray(raw)) return entries;
+  for (let i = 0; i < raw.length; i += 2) {
+    entries.push({ wallet: raw[i], score: Number(raw[i + 1]) });
+  }
+  return entries;
+}
+
 async function getTop() {
   const raw = await redisCommand(['zrange', KEY, '0', String(TOP_N - 1), 'REV', 'WITHSCORES']);
-  if (!Array.isArray(raw) || raw.length === 0) return [];
-
-  const ids = [];
-  const scores = [];
-  for (let i = 0; i < raw.length; i += 2) {
-    ids.push(raw[i]);
-    scores.push(Number(raw[i + 1]));
-  }
-
-  const names = await redisCommand(['hmget', NAMES_KEY, ...ids]);
-  return ids.map((id, i) => ({
-    username: (Array.isArray(names) && names[i]) || id,
-    score: scores[i]
-  }));
+  return parseEntries(raw);
 }
 
 module.exports = async function handler(req, res) {
@@ -44,18 +37,14 @@ module.exports = async function handler(req, res) {
         try { body = JSON.parse(body); } catch { body = {}; }
       }
       const sessionId = String(body?.sessionId || '').trim();
-      const clientId = String(body?.clientId || '').trim();
-      const username = String(body?.username || '').trim();
+      const wallet = String(body?.wallet || '').trim();
       const score = Number(body?.score);
 
       if (!sessionId) {
         return res.status(400).json({ error: 'Missing session — play a round first.' });
       }
-      if (!CLIENT_ID_RE.test(clientId)) {
-        return res.status(400).json({ error: 'Missing client id — reload and play again.' });
-      }
-      if (!USERNAME_RE.test(username)) {
-        return res.status(400).json({ error: 'Username must be 3-8 letters, numbers or underscores.' });
+      if (!isValidSolanaAddress(wallet)) {
+        return res.status(400).json({ error: 'That doesn’t look like a valid Solana address.' });
       }
       if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
         return res.status(400).json({ error: 'Invalid score.' });
@@ -79,10 +68,11 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Score not valid for this session.' });
       }
 
-      // One leaderboard slot per client: score only ever improves (GT), but the
-      // display name is always refreshed so renaming doesn't require a new score.
-      await redisCommand(['zadd', KEY, 'GT', 'CH', String(score), clientId]);
-      await redisCommand(['hset', NAMES_KEY, clientId, username]);
+      // The wallet address itself is the leaderboard identity — one slot per
+      // address, score only ever improves (GT). There is nothing else to lock:
+      // unlike a free-text name, a wallet can't be silently swapped to occupy a
+      // second slot without it being a genuinely different address.
+      await redisCommand(['zadd', KEY, 'GT', 'CH', String(score), wallet]);
 
       const entries = await getTop();
       return res.status(200).json({ entries });
