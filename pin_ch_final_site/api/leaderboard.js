@@ -1,19 +1,11 @@
-const BASE = process.env.KV_REST_API_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN;
+const { redisCommand, isConfigured, getIp, checkRateLimit, scoreCeiling } = require('./_shared');
+
 const KEY = 'pinch:leaderboard';
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
 const MAX_SCORE = 5000;
 const TOP_N = 10;
-
-async function redisCommand(parts) {
-  const path = parts.map(p => encodeURIComponent(p)).join('/');
-  const r = await fetch(`${BASE}/${path}`, {
-    headers: { Authorization: `Bearer ${TOKEN}` }
-  });
-  const data = await r.json();
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
+const SUBMIT_RATE_WINDOW = 60;
+const SUBMIT_RATE_MAX = 8;
 
 function parseEntries(raw) {
   const entries = [];
@@ -30,7 +22,7 @@ async function getTop() {
 }
 
 module.exports = async function handler(req, res) {
-  if (!BASE || !TOKEN) {
+  if (!isConfigured()) {
     return res.status(500).json({ error: 'Leaderboard storage is not configured.' });
   }
 
@@ -45,14 +37,36 @@ module.exports = async function handler(req, res) {
       if (typeof body === 'string') {
         try { body = JSON.parse(body); } catch { body = {}; }
       }
+      const sessionId = String(body?.sessionId || '').trim();
       const username = String(body?.username || '').trim();
       const score = Number(body?.score);
 
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Missing session — play a round first.' });
+      }
       if (!USERNAME_RE.test(username)) {
         return res.status(400).json({ error: 'Username must be 3-8 letters, numbers or underscores.' });
       }
       if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) {
         return res.status(400).json({ error: 'Invalid score.' });
+      }
+
+      const ip = getIp(req);
+      const rateOk = await checkRateLimit(`pinch:rl:submit:${ip}`, SUBMIT_RATE_WINDOW, SUBMIT_RATE_MAX);
+      if (!rateOk) {
+        return res.status(429).json({ error: 'Too many submissions, slow down.' });
+      }
+
+      const sessionKey = `pinch:session:${sessionId}`;
+      const startedAt = await redisCommand(['get', sessionKey]);
+      if (!startedAt) {
+        return res.status(400).json({ error: 'Session expired — play a new round to submit.' });
+      }
+      await redisCommand(['del', sessionKey]);
+
+      const elapsedSeconds = (Date.now() - Number(startedAt)) / 1000;
+      if (score > scoreCeiling(elapsedSeconds)) {
+        return res.status(400).json({ error: 'Score not valid for this session.' });
       }
 
       await redisCommand(['zadd', KEY, 'GT', 'CH', String(score), username]);

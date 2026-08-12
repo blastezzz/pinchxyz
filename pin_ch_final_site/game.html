@@ -33,6 +33,11 @@
     .game-btn:hover{transform:translateY(-2px)}
     .back-link{display:inline-block;margin-top:26px;color:var(--muted);font-size:13px;text-decoration:none;transition:.2s}
     .back-link:hover{color:var(--gold)}
+    .sound-toggle{position:absolute;bottom:14px;right:14px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid #30353c;background:rgba(16,19,24,.85);color:#e7e7e5;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s}
+    .sound-toggle:hover{border-color:var(--gold);color:var(--gold)}
+    .sound-toggle .mute-x{display:none}
+    .sound-toggle.muted .wave{display:none}
+    .sound-toggle.muted .mute-x{display:block}
     .submit-row{display:flex;gap:8px;margin-top:2px}
     .submit-row input{width:130px;background:#11151a;border:1px solid #282e36;border-radius:9px;padding:11px 12px;color:#f4f4f1;font:600 13px "Space Grotesk";text-align:center;outline:none;transition:.2s}
     .submit-row input:focus{border-color:var(--gold)}
@@ -81,6 +86,15 @@
         <div class="hud-lives" id="lives"><span></span><span></span><span></span></div>
       </div>
       <canvas id="game" width="460" height="600"></canvas>
+
+      <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9v6h4l5 5V4L8 9H4z"/>
+          <path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7"/>
+          <path class="wave" d="M19.5 5.5a9.5 9.5 0 0 1 0 13"/>
+          <path class="mute-x" d="M15 9l6 6M21 9l-6 6"/>
+        </svg>
+      </button>
 
       <div class="overlay" id="startOverlay">
         <h2>Catch the <span>hat.</span></h2>
@@ -152,6 +166,66 @@
   </script>
 
   <script>
+    window.PinchSound = (function(){
+      const MUTE_KEY = 'pinch_hat_muted';
+      let muted = localStorage.getItem(MUTE_KEY) === '1';
+      let ctx = null;
+
+      function getCtx(){
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          ctx = new AC();
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+
+      function tone(freq, duration, type, gainVal, delay){
+        if (muted) return;
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        const t0 = c.currentTime + (delay || 0);
+        gain.gain.setValueAtTime(gainVal || 0.15, t0);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(t0);
+        osc.stop(t0 + duration);
+      }
+
+      return {
+        isMuted: () => muted,
+        setMuted(v){
+          muted = v;
+          localStorage.setItem(MUTE_KEY, v ? '1' : '0');
+        },
+        unlock(){ getCtx(); },
+        start(){ tone(520, 0.1, 'triangle', 0.12); },
+        catch(){
+          tone(660, 0.07, 'triangle', 0.14);
+          tone(880, 0.08, 'triangle', 0.1, 0.05);
+        },
+        gold(){
+          tone(523, 0.1, 'triangle', 0.14);
+          tone(659, 0.1, 'triangle', 0.14, 0.06);
+          tone(784, 0.14, 'triangle', 0.14, 0.12);
+        },
+        miss(){ tone(160, 0.18, 'square', 0.1); },
+        gameOver(){
+          tone(392, 0.14, 'sawtooth', 0.1);
+          tone(330, 0.14, 'sawtooth', 0.1, 0.13);
+          tone(262, 0.22, 'sawtooth', 0.1, 0.26);
+        }
+      };
+    })();
+  </script>
+
+  <script>
     (function(){
       const canvas = document.getElementById('game');
       const ctx = canvas.getContext('2d');
@@ -175,11 +249,25 @@
       const submitScoreBtn = document.getElementById('submitScoreBtn');
       const submitMsg = document.getElementById('submitMsg');
       const lbList = document.getElementById('lbList');
+      const soundToggle = document.getElementById('soundToggle');
       const BEST_KEY = 'pinch_hat_best';
       const NAME_KEY = 'pinch_hat_username';
       const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
+      let sessionId = null;
 
       usernameInput.value = localStorage.getItem(NAME_KEY) || '';
+
+      function syncSoundToggle(){
+        const muted = PinchSound.isMuted();
+        soundToggle.classList.toggle('muted', muted);
+        soundToggle.setAttribute('aria-pressed', String(!muted));
+      }
+      soundToggle.addEventListener('click', () => {
+        PinchSound.setMuted(!PinchSound.isMuted());
+        PinchSound.unlock();
+        syncSoundToggle();
+      });
+      syncSoundToggle();
 
       function renderLeaderboard(entries){
         lbList.innerHTML = '';
@@ -221,6 +309,11 @@
           submitMsg.className = 'submit-msg err';
           return;
         }
+        if (!sessionId) {
+          submitMsg.textContent = 'Can’t submit this round — play again.';
+          submitMsg.className = 'submit-msg err';
+          return;
+        }
         submitScoreBtn.disabled = true;
         submitMsg.textContent = 'Submitting…';
         submitMsg.className = 'submit-msg';
@@ -228,11 +321,12 @@
           const r = await fetch('/api/leaderboard', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, score })
+            body: JSON.stringify({ sessionId, username, score })
           });
           let data;
           try { data = await r.json(); } catch { data = null; }
           if (!r.ok || !data) throw new Error((data && data.error) || 'Couldn’t submit right now.');
+          sessionId = null;
           localStorage.setItem(NAME_KEY, username);
           renderLeaderboard(data.entries);
           submitMsg.textContent = 'Submitted!';
@@ -258,6 +352,7 @@
       let spawnTimer = 0;
       let spawnInterval = 950;
       let lastTime = 0;
+      let elapsed = 0;
 
       function getBest(){
         return parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
@@ -281,10 +376,11 @@
 
       function spawnHat(){
         const golden = Math.random() < 0.12;
+        const seconds = elapsed / 1000;
         hats.push({
           x: 30 + Math.random() * (W - 60),
           y: -30,
-          speed: 2.1 + Math.random() * 1.1 + score * 0.02,
+          speed: 2.1 + Math.random() * 1.1 + seconds * 0.1,
           size: golden ? 20 : 24,
           golden
         });
@@ -336,6 +432,7 @@
         hats = [];
         spawnTimer = 0;
         spawnInterval = 950;
+        elapsed = 0;
         catcherX = W / 2;
         scoreEl.textContent = '0';
         updateLives();
@@ -343,6 +440,7 @@
 
       function endGame(){
         running = false;
+        PinchSound.gameOver();
         const best = Math.max(getBest(), score);
         setBest(best);
         finalScoreEl.textContent = score;
@@ -358,6 +456,7 @@
         if (!running) return;
         const dt = lastTime ? t - lastTime : 16;
         lastTime = t;
+        elapsed += dt;
 
         ctx.clearRect(0, 0, W, H);
 
@@ -365,7 +464,7 @@
         if (spawnTimer > spawnInterval) {
           spawnTimer = 0;
           spawnHat();
-          spawnInterval = Math.max(420, 950 - score * 12);
+          spawnInterval = Math.max(380, 950 - (elapsed / 1000) * 18);
         }
 
         for (let i = hats.length - 1; i >= 0; i--) {
@@ -377,6 +476,7 @@
           if (Math.sqrt(dx * dx + dy * dy) < catcherR + h.size * 0.6) {
             score += h.golden ? 3 : 1;
             scoreEl.textContent = score;
+            h.golden ? PinchSound.gold() : PinchSound.catch();
             hats.splice(i, 1);
             continue;
           }
@@ -384,6 +484,7 @@
             hats.splice(i, 1);
             lives -= 1;
             updateLives();
+            PinchSound.miss();
             if (lives <= 0) {
               endGame();
               return;
@@ -395,8 +496,22 @@
         requestAnimationFrame(step);
       }
 
+      function requestSession(){
+        sessionId = null;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        fetch('/api/session-start', { method: 'POST', signal: controller.signal })
+          .then(r => r.json())
+          .then(data => { if (data && data.sessionId) sessionId = data.sessionId; })
+          .catch(() => {})
+          .finally(() => clearTimeout(timeout));
+      }
+
       function start(){
+        PinchSound.unlock();
+        PinchSound.start();
         reset();
+        requestSession();
         startOverlay.classList.add('hidden');
         overOverlay.classList.add('hidden');
         running = true;
