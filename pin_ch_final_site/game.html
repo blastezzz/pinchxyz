@@ -58,6 +58,13 @@
     .lb-name{flex:1;font-weight:500;color:#e7e7e5}
     .lb-score{font:700 13px "Space Grotesk";color:var(--gold)}
     .lb-empty{padding:20px 18px;text-align:center;color:var(--muted);font-size:13px}
+    .hidden{display:none!important}
+    .coming-soon{max-width:420px;margin:40px auto 0;padding:56px 30px;border:1px solid #242a31;border-radius:20px;background:linear-gradient(180deg,#0c1a26 0%,#07090c 78%);text-align:center}
+    .coming-soon-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(255,173,47,.7);margin:0 auto 22px;animation:pinch-pulse 1.8s ease-in-out infinite}
+    @keyframes pinch-pulse{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+    .coming-soon h2{font:700 26px "Space Grotesk";margin:0 0 12px;letter-spacing:-.02em}
+    .coming-soon h2 span{color:var(--gold)}
+    .coming-soon p{color:var(--muted);font-size:14px;line-height:1.7;margin:0}
     @media(max-width:600px){.game-main{padding:42px 16px 70px}}
   </style>
 </head>
@@ -82,6 +89,7 @@
     <h1>Catch the <span>hat.</span></h1>
     <p class="game-sub">He's still holding it, still deciding. Help him catch a few more before he makes up his mind — move to catch, don't let too many fall.</p>
 
+    <div id="playArea">
     <div class="game-stage" id="stage">
       <div class="hud">
         <div class="hud-score">SCORE <span id="score">0</span></div>
@@ -125,6 +133,13 @@
         <li class="lb-empty">Loading…</li>
       </ol>
     </section>
+    </div>
+
+    <div class="coming-soon hidden" id="comingSoon">
+      <div class="coming-soon-dot"></div>
+      <h2>Not <span>ready</span> yet.</h2>
+      <p>He's still holding the hat. The game unlocks the moment we announce — check back soon.</p>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -166,6 +181,18 @@
         ring.style.opacity = 1;
       });
     }
+  </script>
+
+  <script>
+    fetch('/api/game-status')
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.enabled === false) {
+          document.getElementById('playArea').classList.add('hidden');
+          document.getElementById('comingSoon').classList.remove('hidden');
+        }
+      })
+      .catch(() => {});
   </script>
 
   <script>
