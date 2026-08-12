@@ -3,85 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>pin.ch — the flock is here</title>
-  <meta name="description" content="pin.ch — small bird. big deploy. Officially launched on tren.ch.">
+  <title>pin.ch — The last one left in the trenches</title>
+  <meta name="description" content="pin.ch — The last one left in the trenches.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <div class="grain"></div>
 
   <header class="nav">
     <a class="logo" href="#top"><span class="logo-dot"></span>pin.ch</a>
-
     <nav>
-      <a href="#">pin.ch on tren.ch</a>
-      <a href="#"></a>
-      <a href="#"></a>
-      <a href=""></a>
+      <a class="active" href="#top">Home</a>
+      <a href="https://axiom.trade/">Buy Now</a>
     </nav>
-
     <a class="nav-cta" href="https://x.com/i/communities/2031726647930483009">Join community <span>↗</span></a>
   </header>
 
   <main id="top">
-
-    <!-- FIRST BLOCK -->
     <section class="hero">
       <div class="hero-copy">
-        <div class="kicker"><span></span> POWERED BY TREN.CH</div>
-
-        <h1>
-          pin.ch<br>
-          <i>The last one left in the trenches</i>
-        </h1>
-
+        <h1>pin.ch</h1>
+        <h2>The last one left in the trenches</h2>
         <p class="hero-text">
           Found the hat that brings the light back. Now he only launches what deserves to survive
         </p>
 
-        <div class="contract-row">
-          <span>CA</span>
-          <code id="ca">0x111111111111111111111111111</code>
-          <button onclick="copyCA()" aria-label="Copy contract">COPY</button>
+        <div class="hero-actions" id="buy">
+          <a class="btn btn-gold" href="https://axiom.trade/">Buy Now</a>
+          <a class="btn btn-ghost" href="https://dexscreener.com/">Live Chart</a>
         </div>
       </div>
 
       <div class="hero-visual">
-        <div class="orb orb-a"></div>
-        <div class="orb orb-b"></div>
-
-        <img src="assets/knight.png" alt="pin.ch bird mascot">
-
-        
-          <span></span>
-          <small></small>
+        <div class="hero-glow"></div>
+        <div class="hero-image-wrap">
+          <img src="assets/moon_lounge.png" alt="pin.ch bird mascot">
+        </div>
+        <div class="contract-center">
+          <span>CA:</span>
+          <code id="ca">soon...</code>
+          <button onclick="copyCA()" aria-label="Copy contract">⧉</button>
         </div>
       </div>
+
+      <aside class="token-card">
+        <h3>Token Info</h3>
+        <div class="token-row"><span>Ticker</span><strong>$pin.ch</strong></div>
+        <div class="token-row"><span>Network</span><strong>Solana</strong></div>
+        <div class="token-row"><span>Supply</span><strong>1,000,000,000</strong></div>
+        <div class="token-row"><span>Tax</span><strong>0%</strong></div>
+        <div class="token-row"><span>LP Burned</span><strong>Yes</strong></div>
+        <div class="token-row contract-card-row">
+          <span>Contract</span>
+          <button onclick="copyCA()"><code>soon...</code><b>⧉</b></button>
+        </div>
+      </aside>
     </section>
 
-    <!-- LAST CONTENT BLOCK -->
-    <section class="launch" id="launch">
-      <div class="launch-line"></div>
-
-      <div class="launch-content">
-        <span></span>
-        <h2>Officially launched<br>on <em>tren.ch</em></h2>
-        <p></p>
-        <a class="btn btn-gold" href="https://tren.ch/" target="_blank" rel="noopener">Visit tren.ch <span>↗</span></a>
+    <section class="launch-section" id="chart">
+      <div class="launch-inner">
+        <h2>Officially launched<br>on <span>tren.ch</span></h2>
+        <a class="launch-btn" href="https://tren.ch/">Visit tren.ch <span>↗</span></a>
       </div>
-
-      <div class="launch-line"></div>
     </section>
-
   </main>
 
-  <footer>
-    <div class="footer-brand"><span class="logo-dot"></span> pin.ch</div>
-    <span>© 2026 pin.ch</span>
+  <footer class="site-footer">
+    <a class="footer-brand" href="#top"><span></span>pin.ch</a>
+    <div class="footer-copy">© 2026 pin.ch</div>
   </footer>
 
   <div class="toast" id="toast">Contract copied</div>
@@ -89,9 +81,7 @@
   <script>
     function copyCA(){
       const value = document.getElementById('ca').textContent.trim();
-
       navigator.clipboard?.writeText(value);
-
       const toast = document.getElementById('toast');
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1400);
