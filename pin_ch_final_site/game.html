@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catch the hat — pin.ch</title>
+  <meta name="description" content="Catch the hat — a quick pin.ch mini-game.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237e4517'/%3E%3Cstop offset='1' stop-color='%23d68a27'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='27' r='10' fill='%23161616'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .game-main{max-width:600px;margin:0 auto;padding:56px 20px 90px;text-align:center}
+    .game-main h1{font:700 clamp(38px,6vw,56px)/1 "Space Grotesk";letter-spacing:-.05em;margin:0 0 12px}
+    .game-main h1 span{color:var(--gold)}
+    .game-sub{color:var(--muted);font-size:15px;line-height:1.7;max-width:440px;margin:0 auto 34px}
+    .game-stage{position:relative;width:100%;max-width:460px;margin:0 auto;border-radius:20px;overflow:hidden;border:1px solid #242a31;box-shadow:0 25px 55px rgba(0,0,0,.35);background:linear-gradient(180deg,#0c1a26 0%,#07090c 78%)}
+    .game-stage canvas{display:block;width:100%;height:auto;touch-action:none;cursor:none}
+    .hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 18px;z-index:2;pointer-events:none;font:700 13px "Space Grotesk"}
+    .hud-score{color:#f4f4f1}
+    .hud-lives{display:flex;gap:6px}
+    .hud-lives span{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(255,173,47,.6);transition:.25s}
+    .hud-lives span.lost{background:#33261a;box-shadow:none}
+    .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(7,9,12,.82);backdrop-filter:blur(6px);z-index:3;text-align:center;padding:24px;transition:opacity .3s;}
+    .overlay.hidden{opacity:0;pointer-events:none}
+    .overlay h2{font:700 26px "Space Grotesk";margin:0;letter-spacing:-.02em}
+    .overlay h2 span{color:var(--gold)}
+    .overlay p{color:var(--muted);font-size:14px;margin:0;max-width:280px;line-height:1.6}
+    .overlay .score-line{font:700 15px "Space Grotesk";color:#f4f4f1}
+    .overlay .score-line b{color:var(--gold)}
+    .game-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:13px 26px;border-radius:10px;font-size:14px;font-weight:700;background:var(--gold);color:#111;border:0;cursor:pointer;transition:.25s;box-shadow:0 12px 30px rgba(255,173,47,.12)}
+    .game-btn:hover{transform:translateY(-2px)}
+    .back-link{display:inline-block;margin-top:26px;color:var(--muted);font-size:13px;text-decoration:none;transition:.2s}
+    .back-link:hover{color:var(--gold)}
+    .submit-row{display:flex;gap:8px;margin-top:2px}
+    .submit-row input{width:130px;background:#11151a;border:1px solid #282e36;border-radius:9px;padding:11px 12px;color:#f4f4f1;font:600 13px "Space Grotesk";text-align:center;outline:none;transition:.2s}
+    .submit-row input:focus{border-color:var(--gold)}
+    .submit-row .game-btn{padding:11px 20px}
+    .submit-row .game-btn:disabled{opacity:.5;cursor:default;transform:none}
+    .submit-msg{font-size:12px;color:var(--muted);min-height:16px;margin:0}
+    .submit-msg.err{color:#e0715a}
+    .submit-msg.ok{color:var(--gold)}
+    .lb-section{max-width:460px;margin:38px auto 0;text-align:left}
+    .lb-section h3{font:700 13px "Space Grotesk";letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin:0 0 14px;text-align:center}
+    .lb-list{list-style:none;margin:0;padding:0;background:linear-gradient(145deg,rgba(19,23,29,.95),rgba(13,16,21,.95));border:1px solid #242a31;border-radius:15px;overflow:hidden}
+    .lb-row{display:flex;align-items:center;gap:12px;padding:11px 18px;font-size:13px;color:#c8cbd0;border-bottom:1px solid #1c2027}
+    .lb-row:last-child{border-bottom:0}
+    .lb-rank{width:18px;color:var(--muted);font:700 12px "Space Grotesk"}
+    .lb-row:nth-child(1) .lb-rank,.lb-row:nth-child(2) .lb-rank,.lb-row:nth-child(3) .lb-rank{color:var(--gold)}
+    .lb-name{flex:1;font-weight:500;color:#e7e7e5}
+    .lb-score{font:700 13px "Space Grotesk";color:var(--gold)}
+    .lb-empty{padding:20px 18px;text-align:center;color:var(--muted);font-size:13px}
+    @media(max-width:600px){.game-main{padding:42px 16px 70px}}
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <header class="nav">
+    <a class="logo" href="index.html"><span class="logo-dot"></span>pin.ch</a>
+    <nav>
+      <a href="index.html#top">Home</a>
+      <a href="index.html#lore">Lore</a>
+      <a href="index.html#memes">Memes</a>
+      <a class="active" href="game.html">Play</a>
+      <a href="https://axiom.trade/">Buy Now</a>
+    </nav>
+    <a class="nav-cta" href="https://x.com/i/communities/2031726647930483009">Join community <span>↗</span></a>
+  </header>
+
+  <main class="game-main">
+    <h1>Catch the <span>hat.</span></h1>
+    <p class="game-sub">He's still holding it, still deciding. Help him catch a few more before he makes up his mind — move to catch, don't let too many fall.</p>
+
+    <div class="game-stage" id="stage">
+      <div class="hud">
+        <div class="hud-score">SCORE <span id="score">0</span></div>
+        <div class="hud-lives" id="lives"><span></span><span></span><span></span></div>
+      </div>
+      <canvas id="game" width="460" height="600"></canvas>
+
+      <div class="overlay" id="startOverlay">
+        <h2>Catch the <span>hat.</span></h2>
+        <p>Move your mouse or finger to slide him left and right. Every hat that hits the ground costs a life.</p>
+        <button class="game-btn" id="startBtn">Start</button>
+      </div>
+
+      <div class="overlay hidden" id="overOverlay">
+        <h2>Not <span>ready</span> yet.</h2>
+        <p class="score-line">Score: <b id="finalScore">0</b> &nbsp;·&nbsp; Best: <b id="bestScore">0</b></p>
+        <div class="submit-row" id="submitRow">
+          <input type="text" id="usernameInput" maxlength="8" placeholder="Name (3-8)" autocomplete="off">
+          <button class="game-btn" id="submitScoreBtn">Submit</button>
+        </div>
+        <p class="submit-msg" id="submitMsg"></p>
+        <button class="game-btn" id="againBtn">Play again</button>
+      </div>
+    </div>
+
+    <a class="back-link" href="index.html">← Back to pin.ch</a>
+
+    <section class="lb-section">
+      <h3>Leaderboard</h3>
+      <ol class="lb-list" id="lbList">
+        <li class="lb-empty">Loading…</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="footer-brand" href="index.html"><span></span>pin.ch</a>
+    <div class="footer-copy">© 2026 pin.ch</div>
+  </footer>
+
+  <script>
+    if (window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
+      const dot = document.getElementById('cursorDot');
+      const ring = document.getElementById('cursorRing');
+      let mouseX = -100, mouseY = -100, ringX = -100, ringY = -100;
+
+      window.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+      });
+
+      (function loop(){
+        ringX += (mouseX - ringX) * 0.18;
+        ringY += (mouseY - ringY) * 0.18;
+        ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+        requestAnimationFrame(loop);
+      })();
+
+      document.addEventListener('mouseover', e => {
+        if (e.target.closest('a, button')) ring.classList.add('hover');
+      });
+      document.addEventListener('mouseout', e => {
+        if (e.target.closest('a, button')) ring.classList.remove('hover');
+      });
+      document.documentElement.addEventListener('mouseleave', () => {
+        dot.style.opacity = 0;
+        ring.style.opacity = 0;
+      });
+      document.documentElement.addEventListener('mouseenter', () => {
+        dot.style.opacity = 1;
+        ring.style.opacity = 1;
+      });
+    }
+  </script>
+
+  <script>
+    (function(){
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      const DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      ctx.scale(DPR, DPR);
+
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const lifeDots = livesEl.querySelectorAll('span');
+      const startOverlay = document.getElementById('startOverlay');
+      const overOverlay = document.getElementById('overOverlay');
+      const startBtn = document.getElementById('startBtn');
+      const againBtn = document.getElementById('againBtn');
+      const finalScoreEl = document.getElementById('finalScore');
+      const bestScoreEl = document.getElementById('bestScore');
+      const submitRow = document.getElementById('submitRow');
+      const usernameInput = document.getElementById('usernameInput');
+      const submitScoreBtn = document.getElementById('submitScoreBtn');
+      const submitMsg = document.getElementById('submitMsg');
+      const lbList = document.getElementById('lbList');
+      const BEST_KEY = 'pinch_hat_best';
+      const NAME_KEY = 'pinch_hat_username';
+      const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
+
+      usernameInput.value = localStorage.getItem(NAME_KEY) || '';
+
+      function renderLeaderboard(entries){
+        lbList.innerHTML = '';
+        if (!entries || entries.length === 0) {
+          lbList.innerHTML = '<li class="lb-empty">No scores yet — be the first.</li>';
+          return;
+        }
+        entries.forEach((e, i) => {
+          const li = document.createElement('li');
+          li.className = 'lb-row';
+          const rank = document.createElement('span');
+          rank.className = 'lb-rank';
+          rank.textContent = '#' + (i + 1);
+          const name = document.createElement('span');
+          name.className = 'lb-name';
+          name.textContent = e.username;
+          const sc = document.createElement('span');
+          sc.className = 'lb-score';
+          sc.textContent = e.score;
+          li.append(rank, name, sc);
+          lbList.appendChild(li);
+        });
+      }
+
+      async function loadLeaderboard(){
+        try {
+          const r = await fetch('/api/leaderboard');
+          const data = await r.json();
+          renderLeaderboard(data.entries);
+        } catch (err) {
+          lbList.innerHTML = '<li class="lb-empty">Couldn’t load leaderboard.</li>';
+        }
+      }
+
+      async function submitScore(){
+        const username = usernameInput.value.trim();
+        if (!USERNAME_RE.test(username)) {
+          submitMsg.textContent = 'Name must be 3-8 letters, numbers or underscore.';
+          submitMsg.className = 'submit-msg err';
+          return;
+        }
+        submitScoreBtn.disabled = true;
+        submitMsg.textContent = 'Submitting…';
+        submitMsg.className = 'submit-msg';
+        try {
+          const r = await fetch('/api/leaderboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, score })
+          });
+          let data;
+          try { data = await r.json(); } catch { data = null; }
+          if (!r.ok || !data) throw new Error((data && data.error) || 'Couldn’t submit right now.');
+          localStorage.setItem(NAME_KEY, username);
+          renderLeaderboard(data.entries);
+          submitMsg.textContent = 'Submitted!';
+          submitMsg.className = 'submit-msg ok';
+          submitRow.style.display = 'none';
+        } catch (err) {
+          submitMsg.textContent = (err.message && err.message.length < 80) ? err.message : 'Couldn’t submit right now.';
+          submitMsg.className = 'submit-msg err';
+          submitScoreBtn.disabled = false;
+        }
+      }
+
+      submitScoreBtn.addEventListener('click', submitScore);
+      loadLeaderboard();
+
+      let running = false;
+      let score = 0;
+      let lives = 3;
+      let catcherX = W / 2;
+      const catcherR = 28;
+      const catcherY = H - 46;
+      let hats = [];
+      let spawnTimer = 0;
+      let spawnInterval = 950;
+      let lastTime = 0;
+
+      function getBest(){
+        return parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+      }
+      function setBest(v){
+        localStorage.setItem(BEST_KEY, String(v));
+      }
+
+      function pointerX(clientX){
+        const rect = canvas.getBoundingClientRect();
+        return (clientX - rect.left) * (W / rect.width);
+      }
+      function onMove(x){
+        catcherX = Math.max(catcherR, Math.min(W - catcherR, x));
+      }
+      canvas.addEventListener('mousemove', e => onMove(pointerX(e.clientX)));
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches[0]) onMove(pointerX(e.touches[0].clientX));
+        e.preventDefault();
+      }, { passive: false });
+
+      function spawnHat(){
+        const golden = Math.random() < 0.12;
+        hats.push({
+          x: 30 + Math.random() * (W - 60),
+          y: -30,
+          speed: 2.1 + Math.random() * 1.1 + score * 0.02,
+          size: golden ? 20 : 24,
+          golden
+        });
+      }
+
+      function drawCatcher(){
+        ctx.save();
+        const grad = ctx.createLinearGradient(catcherX - catcherR, catcherY - catcherR, catcherX + catcherR, catcherY + catcherR);
+        grad.addColorStop(0, '#7e4517');
+        grad.addColorStop(1, '#d68a27');
+        ctx.beginPath();
+        ctx.arc(catcherX, catcherY, catcherR, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.shadowColor = 'rgba(255,173,47,.5)';
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(catcherX + 9, catcherY - 5, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#161616';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawHat(h){
+        ctx.save();
+        ctx.translate(h.x, h.y);
+        ctx.beginPath();
+        ctx.ellipse(0, h.size * 0.55, h.size, h.size * 0.32, 0, 0, Math.PI * 2);
+        ctx.fillStyle = h.golden ? '#ffc55c' : '#a9691f';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-h.size * 0.55, h.size * 0.5);
+        ctx.quadraticCurveTo(-h.size * 0.55, -h.size * 0.5, 0, -h.size * 0.55);
+        ctx.quadraticCurveTo(h.size * 0.55, -h.size * 0.5, h.size * 0.55, h.size * 0.5);
+        ctx.closePath();
+        ctx.fillStyle = h.golden ? '#ffad2f' : '#7e4517';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function updateLives(){
+        lifeDots.forEach((dot, i) => dot.classList.toggle('lost', i >= lives));
+      }
+
+      function reset(){
+        score = 0;
+        lives = 3;
+        hats = [];
+        spawnTimer = 0;
+        spawnInterval = 950;
+        catcherX = W / 2;
+        scoreEl.textContent = '0';
+        updateLives();
+      }
+
+      function endGame(){
+        running = false;
+        const best = Math.max(getBest(), score);
+        setBest(best);
+        finalScoreEl.textContent = score;
+        bestScoreEl.textContent = best;
+        submitRow.style.display = '';
+        submitScoreBtn.disabled = false;
+        submitMsg.textContent = '';
+        submitMsg.className = 'submit-msg';
+        overOverlay.classList.remove('hidden');
+      }
+
+      function step(t){
+        if (!running) return;
+        const dt = lastTime ? t - lastTime : 16;
+        lastTime = t;
+
+        ctx.clearRect(0, 0, W, H);
+
+        spawnTimer += dt;
+        if (spawnTimer > spawnInterval) {
+          spawnTimer = 0;
+          spawnHat();
+          spawnInterval = Math.max(420, 950 - score * 12);
+        }
+
+        for (let i = hats.length - 1; i >= 0; i--) {
+          const h = hats[i];
+          h.y += h.speed;
+          drawHat(h);
+
+          const dx = h.x - catcherX, dy = h.y - catcherY;
+          if (Math.sqrt(dx * dx + dy * dy) < catcherR + h.size * 0.6) {
+            score += h.golden ? 3 : 1;
+            scoreEl.textContent = score;
+            hats.splice(i, 1);
+            continue;
+          }
+          if (h.y - h.size > H) {
+            hats.splice(i, 1);
+            lives -= 1;
+            updateLives();
+            if (lives <= 0) {
+              endGame();
+              return;
+            }
+          }
+        }
+
+        drawCatcher();
+        requestAnimationFrame(step);
+      }
+
+      function start(){
+        reset();
+        startOverlay.classList.add('hidden');
+        overOverlay.classList.add('hidden');
+        running = true;
+        lastTime = 0;
+        requestAnimationFrame(step);
+      }
+
+      startBtn.addEventListener('click', start);
+      againBtn.addEventListener('click', start);
+
+      drawCatcher();
+      bestScoreEl.textContent = getBest();
+    })();
+  </script>
+</body>
+</html>
