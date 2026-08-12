@@ -12,11 +12,15 @@
 </head>
 <body>
   <div class="grain"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
 
   <header class="nav">
     <a class="logo" href="#top"><span class="logo-dot"></span>pin.ch</a>
     <nav>
-      <a class="active" href="">Home</a>
+      <a class="active" href="#top">Home</a>
+      <a href="#lore">Lore</a>
+      <a href="#memes">Memes</a>
       <a href="https://axiom.trade/">Buy Now</a>
     </nav>
     <a class="nav-cta" href="https://x.com/i/communities/2031726647930483009">Join community <span>↗</span></a>
@@ -63,6 +67,40 @@
       </aside>
     </section>
 
+    <section class="lore-section" id="lore">
+      <div class="section-label">THE LORE</div>
+      <h2>Almost <span>ready.</span></h2>
+      <p>pin.ch doesn't sleep. Ever. While the rest of the world is deep in dreams, he's out there under the moon &mdash; on a rooftop, in a chair, in the middle of nowhere &mdash; holding a hat in his paw.</p>
+      <p>Not wearing it. Holding it. Putting it on means committing for good. Letting go means walking away. pin.ch does neither &mdash; he's just been holding it for another night, weighing the moment.</p>
+      <p>The moon is the only one who sees this, and it never rushes him for an answer.</p>
+      <p>pin.ch is the feeling of &ldquo;almost ready,&rdquo; stretched out over time. Familiar to anyone who's ever sat on the edge of a decision and just couldn't take that last step.</p>
+    </section>
+
+    <section class="memes-section" id="memes">
+      <div class="section-label">THE MEMES</div>
+      <h2>Straight from <span>the trenches.</span></h2>
+      <div class="meme-grid">
+        <a class="meme-item" href="assets/memes/meme-1.png" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-1.png" alt="pin.ch lounging on a rooftop deck chair under the moon" loading="lazy">
+        </a>
+        <a class="meme-item" href="assets/memes/meme-2.jpg" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-2.jpg" alt="pin.ch checking tren.ch referral stats at his desk" loading="lazy">
+        </a>
+        <a class="meme-item" href="assets/memes/meme-3.jpg" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-3.jpg" alt="pin.ch holding out his hat under the moon" loading="lazy">
+        </a>
+        <a class="meme-item" href="assets/memes/meme-4.jpg" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-4.jpg" alt="pin.ch having a picnic by the lake at sunset" loading="lazy">
+        </a>
+        <a class="meme-item" href="assets/memes/meme-5.png" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-5.png" alt="pin.ch DJing for a crowd" loading="lazy">
+        </a>
+        <a class="meme-item" href="assets/memes/meme-6.png" target="_blank" rel="noopener">
+          <img src="assets/memes/meme-6.png" alt="pin.ch planting the pin.ch flag on a hilltop by a castle" loading="lazy">
+        </a>
+      </div>
+    </section>
+
     <section class="launch-section" id="chart">
       <div class="launch-inner">
         <h2>Officially launched<br>on <span>tren.ch</span></h2>
@@ -85,6 +123,40 @@
       const toast = document.getElementById('toast');
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 1400);
+    }
+
+    if (window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
+      const dot = document.getElementById('cursorDot');
+      const ring = document.getElementById('cursorRing');
+      let mouseX = -100, mouseY = -100, ringX = -100, ringY = -100;
+
+      window.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+      });
+
+      (function loop(){
+        ringX += (mouseX - ringX) * 0.18;
+        ringY += (mouseY - ringY) * 0.18;
+        ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+        requestAnimationFrame(loop);
+      })();
+
+      document.addEventListener('mouseover', e => {
+        if (e.target.closest('a, button')) ring.classList.add('hover');
+      });
+      document.addEventListener('mouseout', e => {
+        if (e.target.closest('a, button')) ring.classList.remove('hover');
+      });
+      document.documentElement.addEventListener('mouseleave', () => {
+        dot.style.opacity = 0;
+        ring.style.opacity = 0;
+      });
+      document.documentElement.addEventListener('mouseenter', () => {
+        dot.style.opacity = 1;
+        ring.style.opacity = 1;
+      });
     }
   </script>
 </body>
