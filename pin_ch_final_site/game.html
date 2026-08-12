@@ -252,8 +252,15 @@
       const soundToggle = document.getElementById('soundToggle');
       const BEST_KEY = 'pinch_hat_best';
       const NAME_KEY = 'pinch_hat_username';
+      const CLIENT_KEY = 'pinch_hat_client_id';
       const USERNAME_RE = /^[a-zA-Z0-9_]{3,8}$/;
       let sessionId = null;
+
+      let clientId = localStorage.getItem(CLIENT_KEY);
+      if (!clientId) {
+        clientId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        localStorage.setItem(CLIENT_KEY, clientId);
+      }
 
       usernameInput.value = localStorage.getItem(NAME_KEY) || '';
 
@@ -321,7 +328,7 @@
           const r = await fetch('/api/leaderboard', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, username, score })
+            body: JSON.stringify({ sessionId, clientId, username, score })
           });
           let data;
           try { data = await r.json(); } catch { data = null; }
