@@ -89,7 +89,7 @@
     <h1>Catch the <span>hat.</span></h1>
     <p class="game-sub">He's still holding it, still deciding. Help him catch a few more before he makes up his mind — move to catch, don't let too many fall.</p>
 
-    <div id="playArea">
+    <div id="playArea" class="hidden">
     <div class="game-stage" id="stage">
       <div class="hud">
         <div class="hud-score">SCORE <span id="score">0</span></div>
@@ -184,15 +184,38 @@
   </script>
 
   <script>
-    fetch('/api/game-status')
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.enabled === false) {
-          document.getElementById('playArea').classList.add('hidden');
-          document.getElementById('comingSoon').classList.remove('hidden');
-        }
-      })
-      .catch(() => {});
+    (function(){
+      const playArea = document.getElementById('playArea');
+      const comingSoon = document.getElementById('comingSoon');
+      let decided = false;
+
+      function showGame(){
+        if (decided) return;
+        decided = true;
+        playArea.classList.remove('hidden');
+      }
+      function showComingSoon(){
+        if (decided) return;
+        decided = true;
+        comingSoon.classList.remove('hidden');
+      }
+
+      // Fail open: if the check is slow or fails outright, don't leave the
+      // page permanently blank — default to showing the game.
+      const failOpenTimer = setTimeout(showGame, 2500);
+
+      fetch('/api/game-status')
+        .then(r => r.json())
+        .then(data => {
+          clearTimeout(failOpenTimer);
+          if (data && data.enabled === false) showComingSoon();
+          else showGame();
+        })
+        .catch(() => {
+          clearTimeout(failOpenTimer);
+          showGame();
+        });
+    })();
   </script>
 
   <script>
